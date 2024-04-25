@@ -1,5 +1,6 @@
 package com.OOP.RoomBooking.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ public class User {
     private String password;
 
     @OneToMany(mappedBy = "user")
+    @JsonManagedReference
     private Set<Booking> bookings;
 
     // Getter and Setter methods

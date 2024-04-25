@@ -1,5 +1,6 @@
 package com.OOP.RoomBooking.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -12,6 +13,7 @@ public class Booking {
 
     @ManyToOne
     @JoinColumn(name = "userID")
+    @JsonBackReference
     private User user;
 
     @ManyToOne
@@ -22,15 +24,6 @@ public class Booking {
     private LocalTime timeFrom;
     private LocalTime timeTo;
     private String purpose;
-    private Long id;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     // Getter and Setter methods
     public Long getBookingID() {

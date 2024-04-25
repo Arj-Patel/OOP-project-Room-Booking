@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
-import java.time.ZoneId;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import java.util.Optional;
 
@@ -27,14 +28,31 @@ public class BookingController {
     @Autowired
     private RoomRepository roomRepository;
 
+    //TODO cannot add booking for all times of the day.
     @PostMapping
-    public ResponseEntity<String> addBooking(@RequestBody Booking newBooking) {
-        Optional<User> user = userRepository.findById(newBooking.getUser().getUserID());
-        Optional<Room> room = roomRepository.findById(newBooking.getRoom().getId());
+    public ResponseEntity<String> addBooking(@RequestBody Map<String, Object> payload) {
+        Long userID = Long.valueOf((Integer) payload.get("userID"));
+        Long roomID = Long.valueOf((Integer) payload.get("roomID"));
+        String dateOfBookingStr = (String) payload.get("dateOfBooking");
+        String timeFrom = (String) payload.get("timeFrom");
+        String timeTo = (String) payload.get("timeTo");
+        String purpose = (String) payload.get("purpose");
+
+        Optional<User> user = userRepository.findById(userID);
+        Optional<Room> room = roomRepository.findById(roomID);
 
         if (user.isPresent() && room.isPresent()) {
-            // Convert LocalDate to Date
-            Date dateOfBooking = Date.from(newBooking.getDateOfBooking().atStartOfDay(ZoneId.systemDefault()).toInstant());
+            // Convert String to LocalDate
+            LocalDate dateOfBooking = LocalDate.parse(dateOfBookingStr);
+            // Create new Booking
+            Booking newBooking = new Booking();
+            newBooking.setUser(user.get());
+            newBooking.setRoom(room.get());
+            newBooking.setDateOfBooking(dateOfBooking);
+            newBooking.setTimeFrom(LocalTime.parse(timeFrom));
+            newBooking.setTimeTo(LocalTime.parse(timeTo));
+            newBooking.setPurpose(purpose);
+
             List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(room.get().getId(), dateOfBooking);
             if (bookings.isEmpty()) {
                 bookingRepository.save(newBooking);
@@ -53,13 +71,11 @@ public class BookingController {
 
     @PatchMapping
     public ResponseEntity<String> editBooking(@RequestBody Booking updatedBooking) {
-        Optional<Booking> booking = bookingRepository.findById(updatedBooking.getId());
+        Optional<Booking> booking = bookingRepository.findById(updatedBooking.getBookingID());
 
         if (booking.isPresent()) {
-            // Convert LocalDate to Date
-            Date dateOfBooking = Date.from(updatedBooking.getDateOfBooking().atStartOfDay(ZoneId.systemDefault()).toInstant());
-            List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(booking.get().getRoom().getId(), dateOfBooking);
-            if (bookings.isEmpty() || bookings.get(0).getId().equals(updatedBooking.getId())) {
+            List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(booking.get().getRoom().getId(), updatedBooking.getDateOfBooking());
+            if (bookings.isEmpty() || bookings.get(0).getBookingID().equals(updatedBooking.getBookingID())) {
                 booking.get().setDateOfBooking(updatedBooking.getDateOfBooking());
                 booking.get().setTimeFrom(updatedBooking.getTimeFrom());
                 booking.get().setTimeTo(updatedBooking.getTimeTo());

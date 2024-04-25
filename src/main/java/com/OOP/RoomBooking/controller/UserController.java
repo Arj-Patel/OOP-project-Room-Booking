@@ -1,5 +1,7 @@
 package com.OOP.RoomBooking.controller;
 
+import com.OOP.RoomBooking.dto.BookingDTO;
+import com.OOP.RoomBooking.dto.UserDTO;
 import com.OOP.RoomBooking.model.Booking;
 import com.OOP.RoomBooking.model.User;
 import com.OOP.RoomBooking.repository.BookingRepository;
@@ -54,24 +56,36 @@ public class UserController {
         Optional<User> user = userRepository.findById(userID);
 
         if (user.isPresent()) {
-            return ResponseEntity.ok(user.get());
+            UserDTO userDTO = new UserDTO(user.get().getUserID(), user.get().getEmail(), user.get().getName());
+            return ResponseEntity.ok(userDTO);
         } else {
             return ResponseEntity.status(404).body("User does not exist");
         }
     }
 
+    //TODO: ask and fix whether history should be shown for bookings compared to curent time. ask what happens when room is deleted
     @GetMapping("/history")
     public ResponseEntity<Object> getBookingHistory(@RequestParam Long userID) {
         Optional<User> user = userRepository.findById(userID);
 
         if (user.isPresent()) {
-            List<Booking> bookings = bookingRepository.findByUser(user.get());
-            return ResponseEntity.ok(bookings);
+            List<BookingDTO> bookingDTOs = bookingRepository.findByUser(user.get()).stream()
+                    .map(booking -> new BookingDTO(
+                            booking.getRoom().getRoomName(),
+                            booking.getRoom().getId(),
+                            booking.getBookingID(),
+                            booking.getDateOfBooking(),
+                            booking.getTimeFrom().toString(),
+                            booking.getTimeTo().toString(),
+                            booking.getPurpose()))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(bookingDTOs);
         } else {
             return ResponseEntity.status(404).body("User does not exist");
         }
     }
 
+    //TODO: ask same as for /history and fix it
     @GetMapping("/upcoming")
     public ResponseEntity<Object> getUpcomingBookings(@RequestParam Long userID) {
         Optional<User> user = userRepository.findById(userID);
