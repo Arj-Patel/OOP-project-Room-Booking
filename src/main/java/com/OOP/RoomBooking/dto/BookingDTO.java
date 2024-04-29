@@ -1,18 +1,18 @@
 package com.OOP.RoomBooking.dto;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class BookingDTO {
     private String room;
     private Long roomID;
     private Long bookingID;
-    private LocalDate dateOfBooking;
+    private String dateOfBooking;
     private String timeFrom;
     private String timeTo;
     private String purpose;
 
     // Constructor, getters and setters
-    public BookingDTO(String room, Long roomID, Long bookingID, LocalDate dateOfBooking, String timeFrom, String timeTo, String purpose) {
+    public BookingDTO(String room, Long roomID, Long bookingID, String dateOfBooking, String timeFrom, String timeTo, String purpose) {
         this.room = room;
         this.roomID = roomID;
         this.bookingID = bookingID;
@@ -34,9 +34,9 @@ public class BookingDTO {
         return bookingID;
     }
 
-    public LocalDate getDateOfBooking() {
-        return dateOfBooking;
-    }
+//    public LocalDateTime getDateOfBooking() {
+//        return LocalDateTime.parse(dateOfBooking);
+//    }
 
     public String getTimeFrom() {
         return timeFrom;
@@ -49,4 +49,13 @@ public class BookingDTO {
     public String getPurpose() {
         return purpose;
     }
+
+    public String getDateOfBooking() {
+        return this.dateOfBooking;
+    }
+
+    public void setDateOfBooking(String dateOfBooking) {
+        this.dateOfBooking = dateOfBooking;
+    }
+
 }

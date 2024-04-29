@@ -9,10 +9,12 @@ import com.OOP.RoomBooking.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.OOP.RoomBooking.model.Room;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,14 +27,17 @@ public class UserController {
     private BookingRepository bookingRepository;
 
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody User loginUser) {
-        Optional<User> user = userRepository.findByEmail(loginUser.getEmail());
+    public ResponseEntity<String> loginUser(@RequestBody Map<String, Object> payload) {
+        String email = (String) payload.get("email");
+        String password = (String) payload.get("password");
+
+        Optional<User> user = userRepository.findByEmail(email);
 
         if (user.isPresent()) {
-            if (user.get().getPassword().equals(loginUser.getPassword())) {
+            if (user.get().getPassword().equals(password)) {
                 return ResponseEntity.ok("Login Successful");
             } else {
-                return ResponseEntity.status(401).body("Username/Password Incorrect");
+                return ResponseEntity.status(403).body("Username/Password Incorrect");
             }
         } else {
             return ResponseEntity.status(404).body("User does not exist");
@@ -63,21 +68,31 @@ public class UserController {
         }
     }
 
-    //TODO: ask and fix whether history should be shown for bookings compared to curent time. ask what happens when room is deleted
     @GetMapping("/history")
     public ResponseEntity<Object> getBookingHistory(@RequestParam Long userID) {
         Optional<User> user = userRepository.findById(userID);
 
         if (user.isPresent()) {
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
             List<BookingDTO> bookingDTOs = bookingRepository.findByUser(user.get()).stream()
-                    .map(booking -> new BookingDTO(
-                            booking.getRoom().getRoomName(),
-                            booking.getRoom().getId(),
-                            booking.getBookingID(),
-                            booking.getDateOfBooking(),
-                            booking.getTimeFrom().toString(),
-                            booking.getTimeTo().toString(),
-                            booking.getPurpose()))
+                    .filter(booking -> !booking.getDateOfBooking().toLocalDate().isAfter(LocalDate.now())) // Include bookings for today and previous dates
+                    .map(booking -> {
+                        Room room = booking.getRoom();
+                        if (room == null) {
+                            return null;
+                        }
+                        return new BookingDTO(
+                                room.getRoomName(),
+                                room.getId(),
+                                booking.getBookingID(),
+                                booking.getDateOfBooking().format(dateFormatter),
+                                booking.getTimeFrom().format(timeFormatter),
+                                booking.getTimeTo().format(timeFormatter),
+                                booking.getPurpose());
+                    })
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(bookingDTOs);
         } else {
@@ -85,20 +100,45 @@ public class UserController {
         }
     }
 
-    //TODO: ask same as for /history and fix it
     @GetMapping("/upcoming")
     public ResponseEntity<Object> getUpcomingBookings(@RequestParam Long userID) {
         Optional<User> user = userRepository.findById(userID);
 
         if (user.isPresent()) {
-            List<Booking> bookings = bookingRepository.findByUser(user.get())
-                    .stream()
-                    .filter(booking -> booking.getDateOfBooking().isAfter(LocalDate.now()))
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+            List<BookingDTO> bookingDTOs = bookingRepository.findByUser(user.get()).stream()
+                    .filter(booking -> booking.getDateOfBooking().toLocalDate().isAfter(LocalDate.now())) // Include bookings strictly after today
+                    .map(booking -> {
+                        Room room = booking.getRoom();
+                        if (room == null) {
+                            return null;
+                        }
+                        return new BookingDTO(
+                                room.getRoomName(),
+                                room.getId(),
+                                booking.getBookingID(),
+                                booking.getDateOfBooking().format(dateFormatter),
+                                booking.getTimeFrom().format(timeFormatter),
+                                booking.getTimeTo().format(timeFormatter),
+                                booking.getPurpose());
+                    })
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(bookings);
+            return ResponseEntity.ok(bookingDTOs);
         } else {
             return ResponseEntity.status(404).body("User does not exist");
         }
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        List<UserDTO> userDTOs = users.stream()
+                .map(user -> new UserDTO(user.getUserID(), user.getEmail(), user.getName()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(userDTOs);
     }
 
 }

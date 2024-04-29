@@ -1,6 +1,8 @@
 package com.OOP.RoomBooking.model;
 
 import jakarta.persistence.*;
+import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 public class Room {
@@ -10,6 +12,9 @@ public class Room {
 
     private String roomName;
     private int roomCapacity;
+
+    @OneToMany(mappedBy = "room")
+    private List<Booking> bookings;
 
     // Getter and Setter methods
     public Long getId() {
@@ -35,4 +40,20 @@ public class Room {
     public void setRoomCapacity(int roomCapacity) {
         this.roomCapacity = roomCapacity;
     }
+
+    public List<Booking> getBookings() {
+        return bookings;
+    }
+
+    public void setBookings(List<Booking> bookings) {
+        this.bookings = bookings;
+    }
+
+    public boolean isAvailable(LocalDateTime dateTime) {
+        return bookings.stream()
+                .noneMatch(booking ->
+                        !dateTime.isBefore(booking.getTimeFrom()) &&
+                                !dateTime.isAfter(booking.getTimeTo()));
+    }
+
 }

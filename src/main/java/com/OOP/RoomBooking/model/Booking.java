@@ -2,8 +2,7 @@ package com.OOP.RoomBooking.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Entity
 public class Booking {
@@ -20,10 +19,10 @@ public class Booking {
     @JoinColumn(name = "roomID")
     private Room room;
 
-    private LocalDate dateOfBooking;
-    private LocalTime timeFrom;
-    private LocalTime timeTo;
+    private LocalDateTime timeFrom;
+    private LocalDateTime timeTo;
     private String purpose;
+    private LocalDateTime dateOfBooking;
 
     // Getter and Setter methods
     public Long getBookingID() {
@@ -50,27 +49,19 @@ public class Booking {
         this.room = room;
     }
 
-    public LocalDate getDateOfBooking() {
-        return dateOfBooking;
-    }
-
-    public void setDateOfBooking(LocalDate dateOfBooking) {
-        this.dateOfBooking = dateOfBooking;
-    }
-
-    public LocalTime getTimeFrom() {
+    public LocalDateTime getTimeFrom() {
         return timeFrom;
     }
 
-    public void setTimeFrom(LocalTime timeFrom) {
+    public void setTimeFrom(LocalDateTime timeFrom) {
         this.timeFrom = timeFrom;
     }
 
-    public LocalTime getTimeTo() {
+    public LocalDateTime getTimeTo() {
         return timeTo;
     }
 
-    public void setTimeTo(LocalTime timeTo) {
+    public void setTimeTo(LocalDateTime timeTo) {
         this.timeTo = timeTo;
     }
 
@@ -80,5 +71,13 @@ public class Booking {
 
     public void setPurpose(String purpose) {
         this.purpose = purpose;
+    }
+
+    public LocalDateTime getDateOfBooking() {
+        return dateOfBooking;
+    }
+
+    public void setDateOfBooking(LocalDateTime dateOfBooking) {
+        this.dateOfBooking = dateOfBooking;
     }
 }
