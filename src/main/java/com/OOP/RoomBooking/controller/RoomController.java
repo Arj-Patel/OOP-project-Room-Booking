@@ -1,5 +1,6 @@
 package com.OOP.RoomBooking.controller;
 
+import com.OOP.RoomBooking.exception.CustomException;
 import com.OOP.RoomBooking.model.Room;
 import com.OOP.RoomBooking.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,9 @@ public class RoomController {
     @GetMapping
     public ResponseEntity<Object> getRooms(@RequestParam Integer capacity) {
         // Check if capacity is less than zero
-        if (capacity != null && capacity < 0) {
-            return ResponseEntity.status(400).body("Invalid parameters");
+        if (capacity != null && capacity <= 0) {
+            throw new CustomException("Invalid parameters");
+//            return ResponseEntity.status(400).body("Invalid parameters");
         }
 
         // Get all rooms
@@ -79,17 +81,16 @@ public class RoomController {
 
     @PostMapping
     public ResponseEntity<String> addRoom(@RequestBody Room newRoom) {
-        if (newRoom.getRoomName() == null) {
-            return ResponseEntity.status(400).body("Room name must not be null");
-        }
 
         Optional<Room> existingRoom = roomRepository.findByRoomName(newRoom.getRoomName());
         if (existingRoom.isPresent()) {
-            return ResponseEntity.status(400).body("Room already exists");
+            throw new CustomException("Room already exists");
+//            return ResponseEntity.status(400).body("Room already exists");
         }
 
-        if (newRoom.getRoomCapacity() < 0) {
-            return ResponseEntity.status(400).body("Invalid capacity");
+        if (newRoom.getRoomCapacity() <= 0) {
+            throw new CustomException("Invalid capacity");
+//            return ResponseEntity.status(400).body("Invalid capacity");
         }
 
         roomRepository.save(newRoom);
@@ -104,40 +105,34 @@ public class RoomController {
         Integer roomCapacity = (Integer) payload.get("roomCapacity");
 
         Optional<Room> room = roomRepository.findById(roomID);
-
-        if (room.isPresent()) {
-            if (roomCapacity != null && roomCapacity < 0) {
-                return ResponseEntity.status(400).body("Invalid capacity");
-            } else {
-                Optional<Room> existingRoom = roomRepository.findByRoomName(roomName);
-                if (existingRoom.isPresent() && !existingRoom.get().getId().equals(roomID)) {
-                    return ResponseEntity.status(400).body("Room already exists");
-                } else {
-                    room.get().setRoomName(roomName);
-                    room.get().setRoomCapacity(roomCapacity);
-                    roomRepository.save(room.get());
-                    return ResponseEntity.ok("Room edited successfully");
-                }
-            }
-        } else {
-            return ResponseEntity.status(404).body("Room does not exist");
+        if (!room.isPresent()) {
+            throw new CustomException("Room does not exist");
         }
+
+        Optional<Room> existingRoom = roomRepository.findByRoomName(roomName);
+        if (existingRoom.isPresent() && !existingRoom.get().getId().equals(roomID)) {
+            throw new CustomException("Room with given name already exists");
+        }
+
+        if (roomCapacity != null && roomCapacity <= 0) {
+            throw new CustomException("Invalid capacity");
+        }
+
+        room.get().setRoomName(roomName);
+        room.get().setRoomCapacity(roomCapacity);
+        roomRepository.save(room.get());
+        return ResponseEntity.ok("Room edited successfully");
     }
 
     @DeleteMapping
-    public ResponseEntity<String> deleteRoom(@RequestBody Map<String, Integer> roomToDelete) {
-        Integer roomID = roomToDelete.get("roomID");
-        Long roomIDLong = roomID.longValue();
-        Optional<Room> room = roomRepository.findById(roomIDLong);
+    public ResponseEntity<String> deleteRoom(@RequestParam Long roomID) {
+        Optional<Room> room = roomRepository.findById(roomID);
 
         if (room.isPresent()) {
-            // Delete all bookings associated with the room
-            bookingRepository.deleteByRoomId(roomIDLong);
-
             roomRepository.delete(room.get());
-            return ResponseEntity.ok("Room and all associated bookings deleted successfully");
+            return ResponseEntity.ok("Room deleted successfully");
         } else {
-            return ResponseEntity.status(404).body("Room does not exist");
+            throw new CustomException("Room does not exist");
         }
     }
 }

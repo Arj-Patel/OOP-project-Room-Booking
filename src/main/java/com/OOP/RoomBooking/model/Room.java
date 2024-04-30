@@ -13,7 +13,7 @@ public class Room {
     private String roomName;
     private int roomCapacity;
 
-    @OneToMany(mappedBy = "room")
+    @OneToMany(mappedBy = "room", cascade = CascadeType.REMOVE)
     private List<Booking> bookings;
 
     // Getter and Setter methods

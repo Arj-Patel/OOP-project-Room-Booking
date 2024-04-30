@@ -1,5 +1,6 @@
 package com.OOP.RoomBooking.controller;
 
+import com.OOP.RoomBooking.exception.CustomException;
 import com.OOP.RoomBooking.model.Booking;
 import com.OOP.RoomBooking.model.Room;
 import com.OOP.RoomBooking.model.User;
@@ -40,50 +41,53 @@ public class BookingController {
         String timeToStr = (String) payload.get("timeTo");
         String purpose = (String) payload.get("purpose");
 
-        Optional<User> user = userRepository.findById(userID);
         Optional<Room> room = roomRepository.findById(roomID);
+        if (!room.isPresent()) {
+            throw new CustomException("Room does not exist");
+        }
 
-        if (user.isPresent() && room.isPresent()) {
-            try {
-                // Convert String to LocalDateTime
-                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                LocalDate dateOfBooking = LocalDate.parse(dateOfBookingStr, dateFormatter);
+        Optional<User> user = userRepository.findById(userID);
+        if (!user.isPresent()) {
+            throw new CustomException("User does not exist");
+        }
 
-                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                LocalTime timeFrom = LocalTime.parse(timeFromStr, timeFormatter);
-                LocalTime timeTo = LocalTime.parse(timeToStr, timeFormatter);
-                LocalDateTime dateTimeFrom = LocalDateTime.of(dateOfBooking, timeFrom);
-                LocalDateTime dateTimeTo = LocalDateTime.of(dateOfBooking, timeTo);
+        try {
+            // Convert String to LocalDateTime
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate dateOfBooking = LocalDate.parse(dateOfBookingStr, dateFormatter);
 
-                if (dateTimeTo.isBefore(dateTimeFrom)) {
-                    return ResponseEntity.status(400).body("Invalid date/time");
-                }
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime timeFrom = LocalTime.parse(timeFromStr, timeFormatter);
+            LocalTime timeTo = LocalTime.parse(timeToStr, timeFormatter);
+            LocalDateTime dateTimeFrom = LocalDateTime.of(dateOfBooking, timeFrom);
+            LocalDateTime dateTimeTo = LocalDateTime.of(dateOfBooking, timeTo);
 
-                // Create new Booking
-                Booking newBooking = new Booking();
-                newBooking.setUser(user.get());
-                newBooking.setRoom(room.get());
-                newBooking.setDateOfBooking(dateTimeFrom);
-                newBooking.setTimeFrom(dateTimeFrom);
-                newBooking.setTimeTo(dateTimeTo);
-                newBooking.setPurpose(purpose);
-
-                List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(room.get().getId(), dateTimeFrom, dateTimeTo);
-                if (bookings.isEmpty()) {
-                    bookingRepository.save(newBooking);
-                    return ResponseEntity.ok("Booking created successfully");
-                } else {
-                    return ResponseEntity.status(400).body("Room unavailable");
-                }
-            } catch (DateTimeParseException e) {
-                return ResponseEntity.status(400).body("Invalid date/time");
+            if (dateTimeTo.isBefore(dateTimeFrom)) {
+                throw new CustomException("Invalid date/time");
             }
-        } else if (!user.isPresent()) {
-            return ResponseEntity.status(404).body("User does not exist");
-        } else if (!room.isPresent()) {
-            return ResponseEntity.status(404).body("Room does not exist");
-        } else {
-            return ResponseEntity.status(400).body("Invalid date/time");
+
+            if (dateTimeFrom.isBefore(LocalDateTime.now())) {
+                throw new CustomException("Invalid date/time");
+            }
+
+            // Create new Booking
+            Booking newBooking = new Booking();
+            newBooking.setUser(user.get());
+            newBooking.setRoom(room.get());
+            newBooking.setDateOfBooking(dateTimeFrom);
+            newBooking.setTimeFrom(dateTimeFrom);
+            newBooking.setTimeTo(dateTimeTo);
+            newBooking.setPurpose(purpose);
+
+            List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(room.get().getId(), dateTimeFrom, dateTimeTo);
+            if (bookings.isEmpty()) {
+                bookingRepository.save(newBooking);
+                return ResponseEntity.ok("Booking created successfully");
+            } else {
+                throw new CustomException("Room unavailable");
+            }
+        } catch (DateTimeParseException e) {
+            throw new CustomException("Invalid date/time");
         }
     }
 
@@ -97,53 +101,58 @@ public class BookingController {
         String timeToStr = (String) payload.get("timeTo");
         String purpose = (String) payload.get("purpose");
 
-        Optional<User> user = userRepository.findById(userID);
         Optional<Room> room = roomRepository.findById(roomID);
+        if (!room.isPresent()) {
+            throw new CustomException("Room does not exist");
+        }
+
         Optional<Booking> booking = bookingRepository.findById(bookingID);
+        if (!booking.isPresent()) {
+            throw new CustomException("Booking does not exist");
+        }
 
-        if (user.isPresent() && room.isPresent() && booking.isPresent()) {
-            try {
-                // Convert String to LocalDateTime
-                DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                LocalDate dateOfBooking = LocalDate.parse(dateOfBookingStr, dateFormatter);
+        Optional<User> user = userRepository.findById(userID);
+        if (!user.isPresent()) {
+            throw new CustomException("User does not exist");
+        }
 
-                DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-                LocalTime timeFrom = LocalTime.parse(timeFromStr, timeFormatter);
-                LocalTime timeTo = LocalTime.parse(timeToStr, timeFormatter);
-                LocalDateTime dateTimeFrom = LocalDateTime.of(dateOfBooking, timeFrom);
-                LocalDateTime dateTimeTo = LocalDateTime.of(dateOfBooking, timeTo);
+        try {
+            // Convert String to LocalDateTime
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            LocalDate dateOfBooking = LocalDate.parse(dateOfBookingStr, dateFormatter);
 
-                if (dateTimeTo.isBefore(dateTimeFrom)) {
-                    return ResponseEntity.status(400).body("Invalid date/time");
-                }
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            LocalTime timeFrom = LocalTime.parse(timeFromStr, timeFormatter);
+            LocalTime timeTo = LocalTime.parse(timeToStr, timeFormatter);
+            LocalDateTime dateTimeFrom = LocalDateTime.of(dateOfBooking, timeFrom);
+            LocalDateTime dateTimeTo = LocalDateTime.of(dateOfBooking, timeTo);
 
-                // Update Booking
-                Booking updatedBooking = booking.get();
-                updatedBooking.setUser(user.get());
-                updatedBooking.setRoom(room.get());
-                updatedBooking.setDateOfBooking(dateTimeFrom);
-                updatedBooking.setTimeFrom(dateTimeFrom);
-                updatedBooking.setTimeTo(dateTimeTo);
-                updatedBooking.setPurpose(purpose);
-
-                List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(room.get().getId(), dateTimeFrom, dateTimeTo);
-                if (bookings.isEmpty() || bookings.get(0).getBookingID().equals(bookingID)) {
-                    bookingRepository.save(updatedBooking);
-                    return ResponseEntity.ok("Booking modified successfully");
-                } else {
-                    return ResponseEntity.status(400).body("Room unavailable");
-                }
-            } catch (DateTimeParseException e) {
-                return ResponseEntity.status(400).body("Invalid date/time");
+            if (dateTimeTo.isBefore(dateTimeFrom)) {
+                throw new CustomException("Invalid date/time");
             }
-        } else if (!user.isPresent()) {
-            return ResponseEntity.status(404).body("User does not exist");
-        } else if (!room.isPresent()) {
-            return ResponseEntity.status(404).body("Room does not exist");
-        } else if (!booking.isPresent()) {
-            return ResponseEntity.status(404).body("Booking does not exist");
-        } else {
-            return ResponseEntity.status(400).body("Invalid date/time");
+
+            if (dateTimeFrom.isBefore(LocalDateTime.now())) {
+                throw new CustomException("Invalid date/time");
+            }
+
+            // Update Booking
+            Booking updatedBooking = booking.get();
+            updatedBooking.setUser(user.get());
+            updatedBooking.setRoom(room.get());
+            updatedBooking.setDateOfBooking(dateTimeFrom);
+            updatedBooking.setTimeFrom(dateTimeFrom);
+            updatedBooking.setTimeTo(dateTimeTo);
+            updatedBooking.setPurpose(purpose);
+
+            List<Booking> bookings = bookingRepository.findBookingsByRoomAndDate(room.get().getId(), dateTimeFrom, dateTimeTo);
+            if (bookings.isEmpty() || bookings.get(0).getBookingID().equals(bookingID)) {
+                bookingRepository.save(updatedBooking);
+                return ResponseEntity.ok("Booking modified successfully");
+            } else {
+                throw new CustomException("Room unavailable");
+            }
+        } catch (DateTimeParseException e) {
+            throw new CustomException("Invalid date/time");
         }
     }
 
@@ -154,7 +163,8 @@ public class BookingController {
             bookingRepository.delete(booking.get());
             return ResponseEntity.ok("Booking deleted successfully");
         } else {
-            return ResponseEntity.status(404).body("Booking does not exist");
+            throw new CustomException("Booking does not exist");
+//            return ResponseEntity.status(404).body("Booking does not exist");
         }
     }
 }

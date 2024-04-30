@@ -2,6 +2,7 @@ package com.OOP.RoomBooking.controller;
 
 import com.OOP.RoomBooking.dto.BookingDTO;
 import com.OOP.RoomBooking.dto.UserDTO;
+import com.OOP.RoomBooking.exception.CustomException;
 import com.OOP.RoomBooking.model.Booking;
 import com.OOP.RoomBooking.model.User;
 import com.OOP.RoomBooking.repository.BookingRepository;
@@ -37,10 +38,10 @@ public class UserController {
             if (user.get().getPassword().equals(password)) {
                 return ResponseEntity.ok("Login Successful");
             } else {
-                return ResponseEntity.status(403).body("Username/Password Incorrect");
+                throw new CustomException("Username/Password Incorrect");
             }
         } else {
-            return ResponseEntity.status(404).body("User does not exist");
+            throw new CustomException("User does not exist");
         }
     }
 
@@ -49,7 +50,8 @@ public class UserController {
         Optional<User> user = userRepository.findByEmail(newUser.getEmail());
 
         if (user.isPresent()) {
-            return ResponseEntity.status(403).body("Forbidden, Account already exists");
+            throw new CustomException("Forbidden, Account already exists");
+//            return ResponseEntity.status(403).body("Forbidden, Account already exists");
         } else {
             userRepository.save(newUser);
             return ResponseEntity.ok("Account Creation Successful");
@@ -64,7 +66,8 @@ public class UserController {
             UserDTO userDTO = new UserDTO(user.get().getUserID(), user.get().getEmail(), user.get().getName());
             return ResponseEntity.ok(userDTO);
         } else {
-            return ResponseEntity.status(404).body("User does not exist");
+            throw new CustomException("User does not exist");
+//            return ResponseEntity.status(404).body("User does not exist");
         }
     }
 
@@ -77,7 +80,7 @@ public class UserController {
             DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
             List<BookingDTO> bookingDTOs = bookingRepository.findByUser(user.get()).stream()
-                    .filter(booking -> !booking.getDateOfBooking().toLocalDate().isAfter(LocalDate.now())) // Include bookings for today and previous dates
+                    .filter(booking -> booking.getTimeFrom().isBefore(LocalDateTime.now())) // Include bookings that have started before 'now'
                     .map(booking -> {
                         Room room = booking.getRoom();
                         if (room == null) {
@@ -96,7 +99,7 @@ public class UserController {
                     .collect(Collectors.toList());
             return ResponseEntity.ok(bookingDTOs);
         } else {
-            return ResponseEntity.status(404).body("User does not exist");
+            throw new CustomException("User does not exist");
         }
     }
 
@@ -109,7 +112,7 @@ public class UserController {
             DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
             List<BookingDTO> bookingDTOs = bookingRepository.findByUser(user.get()).stream()
-                    .filter(booking -> booking.getDateOfBooking().toLocalDate().isAfter(LocalDate.now())) // Include bookings strictly after today
+                    .filter(booking -> booking.getTimeFrom().isAfter(LocalDateTime.now())) // Include bookings that will start after 'now'
                     .map(booking -> {
                         Room room = booking.getRoom();
                         if (room == null) {
@@ -128,7 +131,7 @@ public class UserController {
                     .collect(Collectors.toList());
             return ResponseEntity.ok(bookingDTOs);
         } else {
-            return ResponseEntity.status(404).body("User does not exist");
+            throw new CustomException("User does not exist");
         }
     }
 
